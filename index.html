@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Curated Alerts Configuration</title>
+<style>
+/* ── RESET ─────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+       background: #F5F3EE; color: #1A1F2E; font-size: 14px; line-height: 1.5; }
+
+/* ── LAYOUT ─────────────────────────────────────────────────────────────── */
+.wrap { max-width: 860px; margin: 0 auto; padding: 28px 20px 80px; }
+
+/* ── PRINT HEADER (hidden on screen) ────────────────────────────────────── */
+.print-hdr { display: none; }
+
+/* ── STATUS BANNER ──────────────────────────────────────────────────────── */
+.status { border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px;
+          display: none; align-items: center; gap: 8px; }
+.status.vis { display: flex; }
+.status.ok  { background: #EAF3DE; border: 0.5px solid #3B6D11; color: #27500A; }
+.status.err { background: #FCEBEB; border: 0.5px solid #A32D2D; color: #501313; }
+
+/* ── SAVE PANEL ──────────────────────────────────────────────────────────── */
+.save-pnl { background: #E6F1FB; border: 0.5px solid #185FA5; border-radius: 8px;
+            padding: 18px; margin-bottom: 16px; display: none; }
+.save-pnl.vis { display: block; }
+.save-pnl-title { font-size: 13px; font-weight: 500; color: #0C447C; margin-bottom: 14px; }
+
+/* ── HEADER ──────────────────────────────────────────────────────────────── */
+.hdr { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 2px solid #BA7517; }
+.hdr-row { display: flex; justify-content: space-between; align-items: flex-start;
+           gap: 16px; flex-wrap: wrap; }
+.hdr h1 { font-size: 24px; font-weight: 500; color: #1A1F2E; letter-spacing: -0.01em; }
+.hdr p  { font-size: 13px; color: #6B7B8D; margin-top: 4px; }
+.hdr-btns { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ── CARDS ───────────────────────────────────────────────────────────────── */
+.card { background: #fff; border: 0.5px solid #E8E3DA; border-radius: 12px;
+        margin-bottom: 16px; overflow: hidden; }
+.card-hd { display: flex; align-items: center; gap: 12px; padding: 16px 20px;
+           border-bottom: 0.5px solid #E8E3DA; background: #FDFCFA; }
+.sec-num { width: 28px; height: 28px; background: #BA7517; color: #FAEEDA; border-radius: 50%;
+           display: flex; align-items: center; justify-content: center;
+           font-size: 12px; font-weight: 500; flex-shrink: 0; }
+.card-title { font-size: 12px; font-weight: 500; letter-spacing: 0.06em;
+              text-transform: uppercase; color: #1A1F2E; }
+.card-sub   { font-size: 12px; color: #6B7B8D; margin-top: 2px; }
+.card-bod   { padding: 20px; }
+
+/* ── LABELS & INPUTS ─────────────────────────────────────────────────────── */
+.lbl { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+       color: #6B7B8D; margin-bottom: 6px; display: block; }
+.inp { border: 0.5px solid #C8C3BA; background: #fff; padding: 8px 12px; border-radius: 8px;
+       font-size: 13px; color: #1A1F2E; font-family: inherit; width: 100%; }
+.inp:focus { outline: none; border-color: #BA7517; box-shadow: 0 0 0 3px rgba(186,117,23,.12); }
+select.inp { cursor: pointer; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.fg  { margin-bottom: 14px; }
+.rule { height: 0.5px; background: #E8E3DA; margin: 18px 0; }
+
+/* ── COVERAGE CARDS ──────────────────────────────────────────────────────── */
+.cov-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 18px; }
+.cov-card { border: 0.5px solid #E8E3DA; border-radius: 8px; padding: 14px;
+            cursor: pointer; background: #fff; transition: border .12s, background .12s; }
+.cov-card:hover:not(.sel) { border-color: #BA7517; background: #FFFAF7; }
+.cov-card.sel { border: 1.5px solid #BA7517; border-left: 4px solid #BA7517; background: #FAEEDA; }
+.cov-letter { font-size: 30px; font-weight: 500; color: #854F0B; line-height: 1; margin-bottom: 4px; }
+.cov-name   { font-size: 13px; font-weight: 500; color: #1A1F2E; margin-bottom: 4px; }
+.cov-detail { font-size: 11px; color: #6B7B8D; line-height: 1.7; white-space: pre-line; }
+
+/* ── DAYS ────────────────────────────────────────────────────────────────── */
+.days { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 16px; }
+.day-btn { width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid #C8C3BA;
+           background: #fff; color: #6B7B8D; font-size: 11px; font-weight: 500;
+           cursor: pointer; font-family: inherit; transition: all .12s; }
+.day-btn:hover:not(.on) { border-color: #BA7517; color: #BA7517; }
+.day-btn.on { background: #BA7517; border-color: #BA7517; color: #FAEEDA; }
+
+/* ── TIME ROW ────────────────────────────────────────────────────────────── */
+.time-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.time-dash { color: #6B7B8D; font-size: 16px; padding-bottom: 9px; flex-shrink: 0; }
+.hol-opts { display: flex; gap: 6px; }
+.hol-btn { flex: 1; border: 0.5px solid #C8C3BA; background: #fff; padding: 8px 6px;
+           border-radius: 8px; font-size: 13px; font-weight: 500; color: #6B7B8D;
+           cursor: pointer; font-family: inherit; transition: all .12s; }
+.hol-btn:hover:not(.on) { border-color: #185FA5; color: #185FA5; }
+.hol-btn.on { border: 1.5px solid #185FA5; background: #E6F1FB; color: #0C447C; }
+
+/* ── STRATEGY CARDS ──────────────────────────────────────────────────────── */
+.strat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+.strat-card { border: 0.5px solid #E8E3DA; border-radius: 8px; padding: 14px;
+              cursor: pointer; background: #fff; transition: border .12s, background .12s; }
+.strat-card:hover:not(.sel) { border-color: #185FA5; background: #F8FBFF; }
+.strat-card.sel { border: 1.5px solid #185FA5; border-left: 4px solid #185FA5; background: #E6F1FB; }
+.strat-num  { font-size: 30px; font-weight: 500; color: #185FA5; line-height: 1; margin-bottom: 4px; }
+.strat-name { font-size: 13px; font-weight: 500; color: #1A1F2E; margin-bottom: 5px; }
+.strat-desc { font-size: 11px; color: #6B7B8D; line-height: 1.6; }
+.strat-note { font-size: 10px; color: #993C1D; margin-top: 8px; font-style: italic; }
+
+/* ── SUB-BOX ─────────────────────────────────────────────────────────────── */
+.sub-box { background: #FDFCFA; border: 0.5px solid #E8E3DA; border-radius: 8px;
+           padding: 16px; margin-top: 4px; display: none; }
+.sub-box.vis { display: block; }
+.sub-title { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase;
+             color: #185FA5; margin-bottom: 12px; }
+
+/* ── CATEGORIES ──────────────────────────────────────────────────────────── */
+.cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.cat-chip { display: flex; align-items: center; gap: 12px; padding: 11px 14px;
+            border: 0.5px solid #C8C3BA; border-radius: 8px; cursor: pointer;
+            user-select: none; background: #fff; transition: all .12s; }
+.cat-chip:hover:not(.on) { border-color: #185FA5; background: #F8FBFF; }
+.cat-chip.on { border: 1px solid #185FA5; background: #E6F1FB; }
+.cb-box { width: 22px; height: 22px; border-radius: 4px; border: 1.5px solid #C8C3BA;
+          background: transparent; display: flex; align-items: center;
+          justify-content: center; flex-shrink: 0; transition: all .12s; }
+.cat-chip.on .cb-box { background: #185FA5; border-color: #185FA5; }
+.cb-check { display: none; }
+.cat-chip.on .cb-check { display: block; }
+.cat-lbl { font-size: 13px; color: #1A1F2E; line-height: 1.4; }
+.cat-chip.on .cat-lbl { font-weight: 500; }
+.dist-fields { display: none; grid-template-columns: 1fr 1fr; gap: 8px;
+               margin: 6px 0 10px 34px; padding: 12px; background: #E6F1FB; border-radius: 8px; }
+.dist-fields.vis { display: grid; }
+
+/* ── WARN BOX ────────────────────────────────────────────────────────────── */
+.warn-box { background: #FAEEDA; border: 0.5px solid #BA7517; border-radius: 8px;
+            padding: 9px 13px; font-size: 12px; color: #633806; margin-top: 10px; line-height: 1.5; }
+.warn-box.hidden { display: none; }
+
+/* ── PERMIT CHECKBOX ─────────────────────────────────────────────────────── */
+.permit-lbl { display: flex; align-items: flex-start; gap: 9px; cursor: pointer;
+              font-size: 13px; color: #1A1F2E; line-height: 1.5; }
+.permit-lbl input { flex-shrink: 0; margin-top: 2px; accent-color: #185FA5; }
+
+/* ── PRIMARY CONTACT ─────────────────────────────────────────────────────── */
+.poc-box { border: 1.5px solid #993C1D; border-radius: 8px; padding: 16px; background: #FAECE7; }
+.poc-tag { display: inline-block; background: #993C1D; color: #FAECE7; font-size: 10px;
+           font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+           padding: 3px 9px; border-radius: 6px; margin-bottom: 12px; }
+
+/* ── TABLES ──────────────────────────────────────────────────────────────── */
+.tbl    { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th { text-align: left; font-size: 10px; font-weight: 500; letter-spacing: 0.08em;
+          text-transform: uppercase; color: #6B7B8D; padding: 8px 10px;
+          border-bottom: 0.5px solid #C8C3BA; }
+.tbl td { padding: 10px; border-bottom: 0.5px solid #E8E3DA; color: #1A1F2E; vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: none; }
+.empty-state { text-align: center; padding: 28px 0; font-size: 13px;
+               color: #9CA3AF; font-style: italic; }
+
+/* ── BUTTONS ─────────────────────────────────────────────────────────────── */
+.btn-pri   { background: #993C1D; color: #FAECE7; border: none; padding: 9px 18px;
+             border-radius: 8px; font-size: 13px; font-weight: 500;
+             cursor: pointer; font-family: inherit; }
+.btn-pri:hover { background: #7A2E14; }
+.btn-sec   { background: #fff; color: #1A1F2E; border: 0.5px solid #C8C3BA;
+             padding: 9px 18px; border-radius: 8px; font-size: 13px;
+             font-weight: 500; cursor: pointer; font-family: inherit; }
+.btn-sec:hover { border-color: #1A1F2E; }
+.btn-sm    { background: #fff; color: #185FA5; border: 0.5px solid #185FA5;
+             padding: 6px 12px; border-radius: 8px; font-size: 12px;
+             font-weight: 500; cursor: pointer; font-family: inherit; }
+.btn-sm:hover { background: #E6F1FB; }
+.btn-ghost { background: transparent; color: #185FA5; border: 0.5px dashed #185FA5;
+             padding: 6px 12px; border-radius: 8px; font-size: 12px;
+             font-weight: 500; cursor: pointer; font-family: inherit; margin-left: auto; }
+.btn-ghost:hover { background: #E6F1FB; }
+.btn-rm    { background: transparent; border: none; color: #993C1D; cursor: pointer;
+             font-size: 13px; padding: 2px 6px; border-radius: 4px; font-family: inherit; }
+.btn-rm:hover { background: #FEF2F2; }
+.btn-print { background: #1A1F2E; color: #fff; border: none; padding: 9px 18px;
+             border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;
+             font-family: inherit; display: flex; align-items: center; gap: 7px; }
+.btn-print:hover { background: #2D3748; }
+
+/* ── INLINE FORM ─────────────────────────────────────────────────────────── */
+.inline-form { background: #FDFCFA; border: 0.5px solid #E8E3DA; border-radius: 8px;
+               padding: 16px; margin-top: 12px; display: none; }
+.inline-form.vis { display: block; }
+.form-title { font-size: 12px; font-weight: 500; color: #1A1F2E; margin-bottom: 12px; }
+
+/* ── FOOTER ──────────────────────────────────────────────────────────────── */
+.footer { display: flex; justify-content: space-between; align-items: center;
+          padding: 16px 0; border-top: 0.5px solid #E8E3DA; margin-top: 4px; }
+.footer-meta { font-size: 13px; color: #6B7B8D; }
+.footer-meta strong { color: #1A1F2E; font-weight: 500; }
+.autosave-note { font-size: 11px; color: #9CA3AF; margin-top: 12px; text-align: center; }
+
+/* ── PRINT ───────────────────────────────────────────────────────────────── */
+@media print {
+  body { background: #fff; }
+  .wrap { max-width: 100%; padding: 0; }
+
+  .no-print { display: none !important; }
+  .save-pnl, .status, .inline-form,
+  .btn-pri, .btn-sec, .btn-sm, .btn-ghost, .btn-rm, .btn-print,
+  .footer, .autosave-note { display: none !important; }
+
+  .print-hdr { display: flex; justify-content: space-between; align-items: baseline;
+               padding-bottom: 10px; margin-bottom: 16px; border-bottom: 2px solid #BA7517; }
+  .print-hdr-title { font-size: 18px; font-weight: 500; color: #1A1F2E; }
+  .print-hdr-meta  { font-size: 11px; color: #6B7B8D; }
+
+  .hdr { display: none; }
+
+  .card { border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px; break-inside: avoid; }
+  .card-hd { background: #f5f5f5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sec-num { background: #BA7517; color: #fff;
+             -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .cov-card { border: 1px solid #ddd; }
+  .cov-card.sel { border: 2px solid #BA7517; background: #FFF8EE;
+                  -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .day-btn { width: 36px; height: 36px; border: 1px solid #ddd; }
+  .day-btn.on { background: #BA7517; color: #fff; border-color: #BA7517;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .hol-btn { padding: 6px 4px; border: 1px solid #ddd; }
+  .hol-btn.on { background: #E6F1FB; border: 2px solid #185FA5; color: #0C447C;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .strat-card.sel { border: 2px solid #185FA5; background: #EEF4FB;
+                    -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .sub-box.vis { display: block; }
+
+  .cat-chip { border: 1px solid #ddd; }
+  .cat-chip.on { background: #EEF4FB; border: 1px solid #185FA5;
+                 -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cat-chip.on .cb-box { background: #185FA5;
+                          -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .cb-box { border: 1px solid #ccc; }
+
+  .dist-fields.vis { display: grid; }
+
+  .poc-box { border: 2px solid #993C1D;
+             -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .poc-tag { background: #993C1D; color: #fff;
+             -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .tbl { break-inside: avoid; }
+  a[href]::after { content: none; }
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .cov-grid, .strat-grid { grid-template-columns: 1fr; }
+  .two { grid-template-columns: 1fr; }
+  .time-row { flex-direction: column; align-items: stretch; }
+  .time-dash { display: none; }
+  .cat-grid { grid-template-columns: 1fr; }
+  .hdr-row { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- PRINT HEADER (screen-hidden, print-visible) -->
+  <div class="print-hdr">
+    <span class="print-hdr-title">Curated Alerts Configuration</span>
+    <span class="print-hdr-meta" id="print-meta"></span>
+  </div>
+
+  <!-- STATUS BANNER -->
+  <div id="status" class="status" role="status"></div>
+
+  <!-- SAVE PANEL -->
+  <div id="save-pnl" class="save-pnl no-print">
+    <div class="save-pnl-title">Save configuration</div>
+    <div class="two fg">
+      <div>
+        <label class="lbl" for="sf-by">Changed by</label>
+        <input class="inp" id="sf-by" placeholder="Name / role" />
+      </div>
+      <div>
+        <label class="lbl" for="sf-desc">Summary of changes *</label>
+        <input class="inp" id="sf-desc" placeholder="What was updated" />
+      </div>
+    </div>
+    <div class="fg">
+      <label class="lbl" for="sf-notes">Notes (optional)</label>
+      <input class="inp" id="sf-notes" placeholder="Additional context" />
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn-sec" onclick="closeSave()">Cancel</button>
+      <button class="btn-pri" onclick="doSave()">Save</button>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-row">
+      <div>
+        <h1>Curated Alerts Configuration</h1>
+        <p>Complete all sections to define your monitoring package</p>
+      </div>
+      <div class="hdr-btns">
+        <button class="btn-print no-print" onclick="window.print()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Print / Save as PDF
+        </button>
+        <button class="btn-pri no-print" onclick="toggleSave()">Save configuration</button>
+      </div>
+    </div>
+    <div style="margin-top:14px;max-width:340px">
+      <label class="lbl" for="org">Organization name</label>
+      <input class="inp" id="org" placeholder="Enter organization name..." oninput="up('org',this.value)" />
+    </div>
+  </header>
+
+  <!-- ── SECTION 1: COVERAGE ──────────────────────────────────────────────── -->
+  <section class="card">
+    <div class="card-hd">
+      <div class="sec-num" aria-hidden="true">1</div>
+      <div>
+        <div class="card-title">Coverage schedule</div>
+        <div class="card-sub">Select a base template and customize your active hours</div>
+      </div>
+    </div>
+    <div class="card-bod">
+
+      <label class="lbl">Base template</label>
+      <div class="cov-grid" id="cov-cards"></div>
+
+      <div class="rule"></div>
+
+      <label class="lbl">Active days</label>
+      <div class="days" id="day-btns"></div>
+
+      <div class="time-row">
+        <div style="flex:1 1 100px">
+          <label class="lbl" for="start">Start time</label>
+          <input type="time" class="inp" id="start" oninput="up('start',this.value)" />
+        </div>
+        <div class="time-dash">—</div>
+        <div style="flex:1 1 100px">
+          <label class="lbl" for="end">End time</label>
+          <input type="time" class="inp" id="end" oninput="up('end',this.value)" />
+        </div>
+        <div style="flex:2 1 180px">
+          <label class="lbl" for="tz">Time zone</label>
+          <select class="inp" id="tz" onchange="up('tz',this.value)"></select>
+        </div>
+        <div style="flex:1 1 110px">
+          <label class="lbl">Holidays covered</label>
+          <div class="hol-opts">
+            <button class="hol-btn" data-val="yes" onclick="up('hol','yes')">Yes</button>
+            <button class="hol-btn" data-val="no"  onclick="up('hol','no')">No</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── SECTION 2: CURATION ──────────────────────────────────────────────── -->
+  <section class="card">
+    <div class="card-hd">
+      <div class="sec-num" aria-hidden="true">2</div>
+      <div>
+        <div class="card-title">Curation criteria</div>
+        <div class="card-sub">Define how raw alerts are filtered before reaching your team</div>
+      </div>
+    </div>
+    <div class="card-bod">
+
+      <label class="lbl">Alert suppression strategy</label>
+      <div class="strat-grid" id="strat-cards"></div>
+
+      <!-- Strategy 1 -->
+      <div class="sub-box" id="box1">
+        <div class="sub-title">Permit deconfliction setup</div>
+        <label class="permit-lbl">
+          <input type="checkbox" id="permit-cb" onchange="up('permit',this.checked)" />
+          <span>Burn permit data has been integrated into Pano 360</span>
+        </label>
+        <div class="warn-box" id="permit-warn">
+          ⚠ Permit data integration is required before this strategy can be activated. Contact your Pano representative.
+        </div>
+      </div>
+
+      <!-- Strategy 2 -->
+      <div class="sub-box" id="box2">
+        <div class="sub-title">Distance thresholds</div>
+        <div class="two">
+          <div>
+            <label class="lbl" for="distN">Normal day (miles)</label>
+            <input class="inp" type="number" min="0" id="distN" placeholder="e.g. 5" oninput="up('distN',this.value)" />
+          </div>
+          <div>
+            <label class="lbl" for="distR">RFW / fire watch (miles)</label>
+            <input class="inp" type="number" min="0" id="distR" placeholder="e.g. 10" oninput="up('distR',this.value)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Strategy 3 -->
+      <div class="sub-box" id="box3">
+        <div class="sub-title">Active suppression categories</div>
+        <p style="font-size:12px;color:#6B7B8D;margin-bottom:14px;line-height:1.5">
+          Check all categories that should suppress matching alerts
+        </p>
+
+        <!-- Exceeds distance — full width + sub-fields -->
+        <div class="cat-chip" id="cat-dist" style="margin-bottom:8px" onclick="toggleCat('dist')">
+          <div class="cb-box">
+            <svg class="cb-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <span class="cat-lbl">Exceeds distance to asset</span>
+        </div>
+        <div class="dist-fields" id="dist-fields">
+          <div>
+            <label class="lbl" for="catN">Normal day (miles)</label>
+            <input class="inp" type="number" min="0" id="catN" placeholder="e.g. 5" oninput="up('catN',this.value)" />
+          </div>
+          <div>
+            <label class="lbl" for="catR">RFW / fire watch (miles)</label>
+            <input class="inp" type="number" min="0" id="catR" placeholder="e.g. 10" oninput="up('catR',this.value)" />
+          </div>
+        </div>
+
+        <!-- Other 12 categories in 2-col grid -->
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── SECTION 3: CONTACTS ───────────────────────────────────────────────── -->
+  <section class="card">
+    <div class="card-hd">
+      <div class="sec-num" aria-hidden="true">3</div>
+      <div>
+        <div class="card-title">Points of contact</div>
+        <div class="card-sub">Designated recipient receives the full standard alert feed; others receive curated alerts by default</div>
+      </div>
+    </div>
+    <div class="card-bod">
+
+      <div class="poc-box">
+        <div class="poc-tag">Designated recipient of full standard alert feed</div>
+        <div class="two">
+          <div>
+            <label class="lbl" for="poc-name">Full name</label>
+            <input class="inp" id="poc-name" placeholder="Jane Smith" oninput="upPoc('name',this.value)" />
+          </div>
+          <div>
+            <label class="lbl" for="poc-role">Title / role</label>
+            <input class="inp" id="poc-role" placeholder="Fire operations manager" oninput="upPoc('role',this.value)" />
+          </div>
+          <div>
+            <label class="lbl" for="poc-email">Email</label>
+            <input class="inp" type="email" id="poc-email" placeholder="jsmith@org.com" oninput="upPoc('email',this.value)" />
+          </div>
+          <div>
+            <label class="lbl" for="poc-phone">Phone</label>
+            <input class="inp" type="tel" id="poc-phone" placeholder="(555) 000-0000" oninput="upPoc('phone',this.value)" />
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span class="lbl" style="margin:0">
+            Additional contacts
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:12px;color:#6B7B8D"> — curated alerts only unless noted</span>
+          </span>
+          <button class="btn-sm no-print" onclick="toggleAddCon()">+ Add contact</button>
+        </div>
+
+        <div class="inline-form" id="add-con-form">
+          <div class="form-title">New contact</div>
+          <div class="two fg">
+            <div>
+              <label class="lbl" for="nc-name">Full name *</label>
+              <input class="inp" id="nc-name" placeholder="Jane Smith" />
+            </div>
+            <div>
+              <label class="lbl" for="nc-role">Title / role</label>
+              <input class="inp" id="nc-role" placeholder="Dispatch coordinator" />
+            </div>
+            <div>
+              <label class="lbl" for="nc-email">Email</label>
+              <input class="inp" type="email" id="nc-email" placeholder="name@org.com" />
+            </div>
+            <div>
+              <label class="lbl" for="nc-phone">Phone</label>
+              <input class="inp" type="tel" id="nc-phone" placeholder="(555) 000-0000" />
+            </div>
+          </div>
+          <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:13px;color:#1A1F2E;line-height:1.5">
+            <input type="checkbox" id="nc-all" style="flex-shrink:0;margin-top:2px;accent-color:#185FA5" />
+            <span>Also receive all unfiltered alerts (same as designated recipient)</span>
+          </label>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+            <button class="btn-sec" onclick="closeAddCon()">Cancel</button>
+            <button class="btn-pri" onclick="doCon()">Add</button>
+          </div>
+        </div>
+
+        <div id="contacts-wrap"></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── SECTION 4: CHANGE LOG ─────────────────────────────────────────────── -->
+  <section class="card">
+    <div class="card-hd">
+      <div class="sec-num" aria-hidden="true">4</div>
+      <div>
+        <div class="card-title">Change log</div>
+        <div class="card-sub">Audit trail of all configuration adjustments</div>
+      </div>
+      <button class="btn-ghost no-print" onclick="toggleAddLog()">+ Manual entry</button>
+    </div>
+    <div class="card-bod">
+
+      <div class="inline-form" id="add-log-form">
+        <div class="form-title">New log entry</div>
+        <div class="two fg">
+          <div>
+            <label class="lbl" for="lf-date">Date</label>
+            <input class="inp" type="date" id="lf-date" />
+          </div>
+          <div>
+            <label class="lbl" for="lf-by">Changed by</label>
+            <input class="inp" id="lf-by" placeholder="Name / role" />
+          </div>
+        </div>
+        <div class="fg">
+          <label class="lbl" for="lf-desc">Description *</label>
+          <input class="inp" id="lf-desc" placeholder="What was changed and why" />
+        </div>
+        <div class="fg">
+          <label class="lbl" for="lf-notes">Notes</label>
+          <input class="inp" id="lf-notes" placeholder="Additional context" />
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn-sec" onclick="closeAddLog()">Cancel</button>
+          <button class="btn-pri" onclick="doLog()">Add entry</button>
+        </div>
+      </div>
+
+      <div id="log-wrap"></div>
+
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <div class="footer no-print">
+    <div class="footer-meta">
+      Package <strong id="pkg-footer">—</strong><span id="org-footer"></span>
+    </div>
+    <button class="btn-pri" onclick="toggleSave()">Save configuration</button>
+  </div>
+
+  <p class="autosave-note no-print">Your data is automatically saved to this browser. Use "Save configuration" to record a change log entry.</p>
+
+</div><!-- /.wrap -->
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+const COV = [
+  { id:"A", name:"Weekday standard", detail:"Mon–Fri · 6–8 hrs/day\nNo weekends or holidays",
+    days:{Mon:true,Tue:true,Wed:true,Thu:true,Fri:true,Sat:false,Sun:false}, start:"08:00", end:"16:00", hol:"no" },
+  { id:"B", name:"Extended week", detail:"Mon–Sat · 8–10 hrs weekdays\nUp to 8 hrs Saturday\nHolidays covered",
+    days:{Mon:true,Tue:true,Wed:true,Thu:true,Fri:true,Sat:true,Sun:false}, start:"07:00", end:"17:00", hol:"yes" },
+  { id:"C", name:"Full coverage", detail:"7 days/week · 8–10 hrs/day\nAll holidays included",
+    days:{Mon:true,Tue:true,Wed:true,Thu:true,Fri:true,Sat:true,Sun:true}, start:"07:00", end:"17:00", hol:"yes" },
+];
+
+const TIMEZONES = [
+  ["","Select timezone..."],
+  ["America/New_York","Eastern (ET)"],
+  ["America/Chicago","Central (CT)"],
+  ["America/Denver","Mountain (MT)"],
+  ["America/Phoenix","Arizona (no DST)"],
+  ["America/Los_Angeles","Pacific (PT)"],
+  ["America/Anchorage","Alaska (AKT)"],
+  ["America/Honolulu","Hawaii (HT)"],
+  ["America/Puerto_Rico","Atlantic (AT)"],
+  ["Pacific/Guam","Chamorro (ChST)"],
+];
+
+const STRATS = [
+  { id:"1", name:"Permit deconfliction",
+    desc:"Cross-references alerts against active burn permits, filtering permitted burns from actionable alerts.",
+    note:"Requires burn permit data integrated in Pano 360." },
+  { id:"2", name:"Distance-based suppression",
+    desc:"Filters alerts by proximity to customer assets. A distance threshold determines which incidents require notification." },
+  { id:"3", name:"Custom suppression categories",
+    desc:"Developed collaboratively using local ag, residential, and other regional categories tailored to your area." },
+];
+
+const CATS = [
+  { id:"hours", label:"Alert outside business hours" },
+  { id:"ag",    label:"Agg/residential burn" },
+  { id:"tooFar",label:"Too far to see/unable to determine" },
+  { id:"gone",  label:"No longer visible" },
+  { id:"dust",  label:"Dust/drift smoke/steam/fog" },
+  { id:"rx",    label:"RX burn" },
+  { id:"ind",   label:"Industrial smoke/site" },
+  { id:"chim",  label:"Chimney smoke" },
+  { id:"wx",    label:"Clouds/weather" },
+  { id:"nonWf", label:"Non-wildfire incident" },
+  { id:"equip", label:"Equipment exhaust" },
+  { id:"dup",   label:"Duplicate incident" },
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+let cfg = {
+  org:"", sched:null,
+  days:{Mon:true,Tue:true,Wed:true,Thu:true,Fri:true,Sat:false,Sun:false},
+  start:"08:00", end:"17:00", hol:"no", tz:"",
+  strat:null, permit:false, distN:"", distR:"",
+  cats:{dist:false,hours:false,ag:false,tooFar:false,gone:false,dust:false,
+        rx:false,ind:false,chim:false,wx:false,nonWf:false,equip:false,dup:false},
+  catN:"", catR:"",
+  poc:{name:"",role:"",email:"",phone:""},
+  contacts:[],
+};
+let log = [];
+
+// ── PERSISTENCE ───────────────────────────────────────────────────────────────
+function persist() {
+  try { localStorage.setItem("pac-cfg", JSON.stringify(cfg)); } catch(e) {}
+}
+
+function loadLocal() {
+  try { const c = localStorage.getItem("pac-cfg"); if(c) cfg = Object.assign({}, cfg, JSON.parse(c)); } catch(e) {}
+  try { const l = localStorage.getItem("pac-log"); if(l) log = JSON.parse(l);                         } catch(e) {}
+}
+
+// ── STATE UPDATERS ────────────────────────────────────────────────────────────
+function up(key, val) {
+  cfg[key] = val;
+  persist();
+  onKey(key, val);
+}
+
+function upPoc(key, val) {
+  cfg.poc[key] = val;
+  persist();
+}
+
+function toggleDay(day) {
+  cfg.days[day] = !cfg.days[day];
+  persist();
+  const btn = document.querySelector('.day-btn[data-day="'+day+'"]');
+  if (btn) btn.classList.toggle("on", cfg.days[day]);
+}
+
+function pickSched(id) {
+  const o = COV.find(x => x.id === id);
+  cfg.sched = id; cfg.days = Object.assign({}, o.days);
+  cfg.start = o.start; cfg.end = o.end; cfg.hol = o.hol;
+  persist();
+  document.querySelectorAll(".cov-card").forEach(c => c.classList.toggle("sel", c.dataset.id === id));
+  DAYS.forEach(d => {
+    const b = document.querySelector('.day-btn[data-day="'+d+'"]');
+    if (b) b.classList.toggle("on", cfg.days[d]);
+  });
+  document.getElementById("start").value = cfg.start;
+  document.getElementById("end").value   = cfg.end;
+  document.querySelectorAll(".hol-btn").forEach(b => b.classList.toggle("on", b.dataset.val === cfg.hol));
+  renderPkg();
+}
+
+function toggleCat(id) {
+  cfg.cats[id] = !cfg.cats[id];
+  persist();
+  const chip = document.getElementById("cat-"+id);
+  if (chip) chip.classList.toggle("on", cfg.cats[id]);
+  if (id === "dist") document.getElementById("dist-fields").classList.toggle("vis", cfg.cats.dist);
+}
+
+function onKey(key, val) {
+  if (key === "strat") {
+    document.querySelectorAll(".strat-card").forEach(c => c.classList.toggle("sel", c.dataset.id === val));
+    ["1","2","3"].forEach(n => document.getElementById("box"+n).classList.toggle("vis", val === n));
+    renderPkg();
+  }
+  if (key === "hol") {
+    document.querySelectorAll(".hol-btn").forEach(b => b.classList.toggle("on", b.dataset.val === val));
+  }
+  if (key === "permit") {
+    document.getElementById("permit-warn").classList.toggle("hidden", !!val);
+  }
+  if (key === "org") renderPkg();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function renderPkg() {
+  const pkg = cfg.sched && cfg.strat ? cfg.sched+"–"+cfg.strat : "—";
+  const pf = document.getElementById("pkg-footer");
+  const of = document.getElementById("org-footer");
+  if (pf) pf.textContent = pkg;
+  if (of) of.textContent = cfg.org ? " · "+cfg.org : "";
+  const pm = document.getElementById("print-meta");
+  if (pm) pm.textContent = (cfg.org ? cfg.org+" · " : "") + "Printed "+new Date().toLocaleDateString("en-US",{dateStyle:"medium"});
+}
+
+function renderContacts() {
+  const wrap = document.getElementById("contacts-wrap");
+  if (!wrap) return;
+  if (!cfg.contacts.length) {
+    wrap.innerHTML = '<div class="empty-state">No additional contacts configured.</div>'; return;
+  }
+  wrap.innerHTML =
+    '<table class="tbl" style="margin-top:8px"><thead><tr>'
+    +'<th>Name</th><th>Title</th><th>Email</th><th>Phone</th><th>All alerts</th><th class="no-print"></th>'
+    +'</tr></thead><tbody>'
+    + cfg.contacts.map(c =>
+        '<tr>'
+        +'<td style="font-weight:500">'+esc(c.name)+'</td>'
+        +'<td>'+esc(c.role||"—")+'</td>'
+        +'<td>'+esc(c.email||"—")+'</td>'
+        +'<td>'+esc(c.phone||"—")+'</td>'
+        +'<td style="text-align:center;color:'+(c.all?"#185FA5":"#ccc")+';font-weight:500">'+(c.all?"✓":"–")+'</td>'
+        +'<td class="no-print"><button class="btn-rm" onclick="rmCon('+c.id+')">✕</button></td>'
+        +'</tr>').join("")
+    +'</tbody></table>';
+}
+
+function renderLog() {
+  const wrap = document.getElementById("log-wrap");
+  if (!wrap) return;
+  if (!log.length) {
+    wrap.innerHTML = '<div class="empty-state">No log entries yet. Save your configuration to create the first entry.</div>'; return;
+  }
+  wrap.innerHTML =
+    '<table class="tbl"><thead><tr>'
+    +'<th>Date / time</th><th>Changed by</th><th>Description</th><th>Notes</th><th class="no-print"></th>'
+    +'</tr></thead><tbody>'
+    + log.map(e =>
+        '<tr>'
+        +'<td style="white-space:nowrap;color:#6B7B8D;font-size:12px">'+esc(e.ts||e.date||"")+'</td>'
+        +'<td style="font-weight:500">'+esc(e.by||"—")+'</td>'
+        +'<td>'+esc(e.desc||"—")+'</td>'
+        +'<td style="color:#6B7B8D">'+esc(e.notes||"—")+'</td>'
+        +'<td class="no-print"><button class="btn-rm" onclick="rmLog('+e.id+')">✕</button></td>'
+        +'</tr>').join("")
+    +'</tbody></table>';
+}
+
+// ── SAVE FLOW ─────────────────────────────────────────────────────────────────
+function toggleSave() { document.getElementById("save-pnl").classList.toggle("vis"); }
+function closeSave()  { document.getElementById("save-pnl").classList.remove("vis"); }
+
+function doSave() {
+  const desc = document.getElementById("sf-desc").value.trim();
+  if (!desc) { flash("Please enter a summary of changes before saving","err"); return; }
+  persist();
+  const entry = {
+    id: Date.now(),
+    ts: new Date().toLocaleString("en-US",{dateStyle:"medium",timeStyle:"short"}),
+    by:    document.getElementById("sf-by").value.trim(),
+    desc,
+    notes: document.getElementById("sf-notes").value.trim(),
+  };
+  log.unshift(entry);
+  try { localStorage.setItem("pac-log", JSON.stringify(log)); } catch(e) {}
+  closeSave();
+  ["sf-by","sf-desc","sf-notes"].forEach(id => document.getElementById(id).value = "");
+  renderLog();
+  flash("Configuration saved successfully","ok");
+}
+
+// ── CONTACTS ──────────────────────────────────────────────────────────────────
+function toggleAddCon() { document.getElementById("add-con-form").classList.toggle("vis"); }
+function closeAddCon() {
+  document.getElementById("add-con-form").classList.remove("vis");
+  ["nc-name","nc-role","nc-email","nc-phone"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("nc-all").checked = false;
+}
+
+function doCon() {
+  const name = document.getElementById("nc-name").value.trim();
+  if (!name) return;
+  cfg.contacts.push({
+    id:    Date.now(),
+    name,
+    role:  document.getElementById("nc-role").value.trim(),
+    email: document.getElementById("nc-email").value.trim(),
+    phone: document.getElementById("nc-phone").value.trim(),
+    all:   document.getElementById("nc-all").checked,
+  });
+  persist();
+  closeAddCon();
+  renderContacts();
+}
+
+function rmCon(id) {
+  cfg.contacts = cfg.contacts.filter(c => c.id !== id);
+  persist(); renderContacts();
+}
+
+// ── LOG ENTRIES ───────────────────────────────────────────────────────────────
+function toggleAddLog() { document.getElementById("add-log-form").classList.toggle("vis"); }
+function closeAddLog() {
+  document.getElementById("add-log-form").classList.remove("vis");
+  ["lf-date","lf-by","lf-desc","lf-notes"].forEach(id => document.getElementById(id).value = "");
+}
+
+function doLog() {
+  const desc = document.getElementById("lf-desc").value.trim();
+  if (!desc) return;
+  const entry = {
+    id:    Date.now(),
+    ts:    document.getElementById("lf-date").value || new Date().toLocaleDateString(),
+    by:    document.getElementById("lf-by").value.trim(),
+    desc,
+    notes: document.getElementById("lf-notes").value.trim(),
+  };
+  log.unshift(entry);
+  try { localStorage.setItem("pac-log", JSON.stringify(log)); } catch(e) {}
+  closeAddLog(); renderLog();
+  flash("Log entry added","ok");
+}
+
+function rmLog(id) {
+  log = log.filter(e => e.id !== id);
+  try { localStorage.setItem("pac-log", JSON.stringify(log)); } catch(e) {}
+  renderLog();
+}
+
+// ── STATUS FLASH ──────────────────────────────────────────────────────────────
+let _ft;
+function flash(msg, type) {
+  const el = document.getElementById("status");
+  el.textContent = (type==="ok" ? "✓  " : "⚠  ") + msg;
+  el.className = "status vis " + type;
+  clearTimeout(_ft);
+  _ft = setTimeout(() => el.classList.remove("vis"), 4000);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+function init() {
+  loadLocal();
+
+  // Coverage cards
+  document.getElementById("cov-cards").innerHTML = COV.map(o =>
+    '<div class="cov-card'+(cfg.sched===o.id?" sel":"")+'" data-id="'+o.id+'" onclick="pickSched(\''+o.id+'\')">'
+    +'<div class="cov-letter">'+o.id+'</div>'
+    +'<div class="cov-name">'+o.name+'</div>'
+    +'<div class="cov-detail">'+o.detail+'</div>'
+    +'</div>').join("");
+
+  // Day buttons
+  document.getElementById("day-btns").innerHTML = DAYS.map(d =>
+    '<button class="day-btn'+(cfg.days[d]?" on":"")+'" data-day="'+d+'" onclick="toggleDay(\''+d+'\')" aria-pressed="'+(cfg.days[d])+'">'
+    +d.slice(0,2)+'</button>').join("");
+
+  // Timezone select
+  document.getElementById("tz").innerHTML = TIMEZONES.map(([v,l]) =>
+    '<option value="'+v+'"'+(cfg.tz===v?" selected":"")+'>'+l+'</option>').join("");
+
+  // Strategy cards
+  document.getElementById("strat-cards").innerHTML = STRATS.map(o =>
+    '<div class="strat-card'+(cfg.strat===o.id?" sel":"")+'" data-id="'+o.id+'" onclick="up(\'strat\',\''+o.id+'\')">'
+    +'<div class="strat-num">'+o.id+'</div>'
+    +'<div class="strat-name">'+o.name+'</div>'
+    +'<div class="strat-desc">'+o.desc+'</div>'
+    +(o.note ? '<div class="strat-note">* '+o.note+'</div>' : "")
+    +'</div>').join("");
+
+  // Category grid
+  const cbSvg = '<svg class="cb-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  document.getElementById("cat-grid").innerHTML = CATS.map(cat =>
+    '<div class="cat-chip'+(cfg.cats[cat.id]?" on":"")+'" id="cat-'+cat.id+'" onclick="toggleCat(\''+cat.id+'\')">'
+    +'<div class="cb-box">'+cbSvg+'</div>'
+    +'<span class="cat-lbl">'+cat.label+'</span>'
+    +'</div>').join("");
+
+  // Restore field values
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v||""; };
+  set("org",       cfg.org);
+  set("start",     cfg.start);
+  set("end",       cfg.end);
+  set("distN",     cfg.distN);
+  set("distR",     cfg.distR);
+  set("catN",      cfg.catN);
+  set("catR",      cfg.catR);
+  set("poc-name",  cfg.poc.name);
+  set("poc-role",  cfg.poc.role);
+  set("poc-email", cfg.poc.email);
+  set("poc-phone", cfg.poc.phone);
+  document.getElementById("permit-cb").checked = !!cfg.permit;
+
+  // Restore timezone
+  document.getElementById("tz").value = cfg.tz || "";
+
+  // Restore dynamic states
+  document.querySelectorAll(".hol-btn").forEach(b => b.classList.toggle("on", b.dataset.val === cfg.hol));
+  ["1","2","3"].forEach(n => document.getElementById("box"+n).classList.toggle("vis", cfg.strat === n));
+  document.getElementById("permit-warn").classList.toggle("hidden", !!cfg.permit);
+  document.getElementById("cat-dist").classList.toggle("on", !!cfg.cats.dist);
+  document.getElementById("dist-fields").classList.toggle("vis", !!cfg.cats.dist);
+
+  renderContacts();
+  renderLog();
+  renderPkg();
+}
+
+init();
+</script>
+</body>
+</html>
